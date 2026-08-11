@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio Interactivo: De la Secante a la Tangente (La Derivada)</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --container-bg: #ffffff;
+            --text-color: #1e293b;
+            --primary: #3b82f6;
+            --secant-color: #ef4444;
+            --tangent-color: #10b981;
+            --accent: #8b5cf6;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 24px;
+            max-width: 900px;
+        }
+
+        h1 {
+            color: #0f172a;
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        p.subtitle {
+            color: #64748b;
+            font-size: 1.05rem;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        @media (min-width: 850px) {
+            .main-container {
+                grid-template-columns: 550px 1fr;
+            }
+        }
+
+        .canvas-card {
+            background: var(--container-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            padding: 20px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            background-color: #fafafa;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 1;
+        }
+
+        .controls-card {
+            background: var(--container-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            padding: 24px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #334155;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            background: #cbd5e1;
+            border-radius: 5px;
+            outline: none;
+            accent-color: var(--primary);
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background-color: #2563eb;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--border);
+            color: #475569;
+        }
+
+        .btn-outline:hover {
+            background-color: #f1f5f9;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .metric-box {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .metric-box.secant { border-left: 4px solid var(--secant-color); }
+        .metric-box.tangent { border-left: 4px solid var(--tangent-color); }
+
+        .metric-val {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #0f172a;
+            margin-top: 4px;
+        }
+
+        .explanation-box {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+            color: #166534;
+            font-size: 0.95rem;
+        }
+
+        .explanation-box h3 {
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .math {
+            font-family: 'Times New Roman', Times, serif;
+            font-style: italic;
+            font-weight: bold;
+        }
+
+        .badge {
+            font-size: 0.8rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: white;
+            font-weight: normal;
+            margin-left: 4px;
+        }
+
+        .instructions {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-top: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Descubriendo la Derivada</h1>
+        <p class="subtitle">Mueve el punto móvil para ver cómo una recta secante se transforma en la recta tangente cuando la distancia se acerca a cero.</p>
+    </header>
+
+    <div class="main-container">
+        <!-- Columna Izquierda: Gráfico interactivo -->
+        <div class="canvas-card">
+            <canvas id="graphCanvas" width="500" height="500"></canvas>
+            <p class="instructions">💡 Puedes arrastrar el punto azul <b>B</b> directamente en el gráfico.</p>
+        </div>
+
+        <!-- Columna Derecha: Controles e Información -->
+        <div class="controls-card">
+            <div>
+                <div class="control-group">
+                    <label>Elegir Función:</label>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button class="btn btn-outline" onclick="setFunction('quad')" id="btn-quad">f(x) = 0.2x²</button>
+                        <button class="btn btn-outline" onclick="setFunction('sin')" id="btn-sin">f(x) = sin(x) + 2</button>
+                        <button class="btn btn-outline" onclick="setFunction('cubic')" id="btn-cubic">f(x) = 0.05x³</button>
+                    </div>
+                </div>
+
+                <div class="control-group" style="margin-top: 24px;">
+                    <label for="xB-slider">Posición del Punto <span style="color:var(--primary)">B (x)</span>:</label>
+                    <div class="slider-container">
+                        <input type="range" id="xB-slider" min="1.01" max="4.5" step="0.01" value="3.5">
+                        <span id="xB-val" style="font-weight: bold; width: 40px;">3.50</span>
+                    </div>
+                </div>
+
+                <div class="metrics">
+                    <div class="metric-box">
+                        <div>Distancia <span class="math">Δx</span></div>
+                        <div class="metric-val" id="delta-x">2.00</div>
+                    </div>
+                    <div class="metric-box">
+                        <div>Distancia <span class="math">Δy</span></div>
+                        <div class="metric-val" id="delta-y">2.00</div>
+                    </div>
+                    <div class="metric-box secant">
+                        <div>Pendiente Secante <span class="math">(m<sub>sec</sub>)</span></div>
+                        <div class="metric-val" id="slope-sec" style="color: var(--secant-color);">1.00</div>
+                    </div>
+                    <div class="metric-box tangent">
+                        <div>Pendiente Tangente <span class="math">(m<sub>tan</sub> = f'(x))</span></div>
+                        <div class="metric-val" id="slope-tan" style="color: var(--tangent-color);">0.40</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="explanation" class="explanation-box">
+                <h3 id="exp-title">El Punto B está lejos</h3>
+                <p id="exp-text">La línea roja es una <b>secante</b> porque corta la curva en dos puntos (A y B). Mide la tasa de cambio promedio.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+        const slider = document.getElementById('xB-slider');
+        const xBValSpan = document.getElementById('xB-val');
+        
+        // Elementos de métricas
+        const deltaXSpan = document.getElementById('delta-x');
+        const deltaYSpan = document.getElementById('delta-y');
+        const slopeSecSpan = document.getElementById('slope-sec');
+        const slopeTanSpan = document.getElementById('slope-tan');
+        
+        // Elementos de explicación
+        const expTitle = document.getElementById('exp-title');
+        const expText = document.getElementById('exp-text');
+        const explanationBox = document.getElementById('explanation');
+
+        // Configuración del plano cartesiano
+        const scale = 50; // píxeles por unidad
+        const origin = { x: 100, y: 350 }; // Origen (0,0) en la pantalla
+
+        // Estado del juego / simulación
+        let currentFuncType = 'quad';
+        let xA = 1.5; // Punto A fijo
+        let xB = parseFloat(slider.value);
+        let isDragging = false;
+
+        // Definición de funciones y sus derivadas
+        const functions = {
+            quad: {
+                f: x => 0.2 * x * x,
+                df: x => 0.4 * x
+            },
+            sin: {
+                f: x => Math.sin(x) + 2,
+                df: x => Math.cos(x)
+            },
+            cubic: {
+                f: x => 0.05 * x * x * x,
+                df: x => 0.15 * x * x
+            }
+        };
+
+        function setFunction(type) {
+            currentFuncType = type;
+            // Actualizar estilo botones
+            ['quad', 'sin', 'cubic'].forEach(t => {
+                const btn = document.getElementById(`btn-${t}`);
+                if (t === type) {
+                    btn.style.backgroundColor = 'var(--primary)';
+                    btn.style.color = 'white';
+                } else {
+                    btn.style.backgroundColor = 'transparent';
+                    btn.style.color = '#475569';
+                }
+            });
+            
+            // Ajustar los sliders según la función para que se vea óptimo
+            if (type === 'sin') {
+                xA = 1.0;
+                slider.min = "1.01";
+                slider.max = "5.0";
+            } else {
+                xA = 1.5;
+                slider.min = "1.51";
+                slider.max = "4.5";
+            }
+            
+            if (xB <= xA) xB = xA + 1.5;
+            slider.value = xB;
+            
+            update();
+        }
+
+        // Conversión de coordenadas matemáticas a píxeles de pantalla
+        function toScreen(x, y) {
+            return {
+                x: origin.x + x * scale,
+                y: origin.y - y * scale
+            };
+        }
+
+        // Conversión de píxeles a coordenadas matemáticas
+        function toMath(screenX, screenY) {
+            return {
+                x: (screenX - origin.x) / scale,
+                y: (origin.y - screenY) / scale
+            };
+        }
+
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Líneas de cuadrícula
+            ctx.strokeStyle = '#f1f5f9';
+            ctx.lineWidth = 1;
+            
+            for (let x = -2; x * scale < canvas.width; x++) {
+                let pos = toScreen(x, 0);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, 0);
+                ctx.lineTo(pos.x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = -2; y * scale < canvas.height; y++) {
+                let pos = toScreen(0, y);
+                ctx.beginPath();
+                ctx.moveTo(0, pos.y);
+                ctx.lineTo(canvas.width, pos.y);
+                ctx.stroke();
+            }
+
+            // Ejes principales
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            
+            // Eje X
+            ctx.beginPath();
+            ctx.moveTo(0, origin.y);
+            ctx.lineTo(canvas.width, origin.y);
+            ctx.stroke();
+            
+            // Eje Y
+            ctx.beginPath();
+            ctx.moveTo(origin.x, 0);
+            ctx.lineTo(origin.x, canvas.height);
+            ctx.stroke();
+        }
+
+        function drawFunction() {
+            const current = functions[currentFuncType];
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+
+            let first = true;
+            for (let px = 0; px < canvas.width; px++) {
+                let mathCoord = toMath(px, 0);
+                let mx = mathCoord.x;
+                let my = current.f(mx);
+                let screenCoord = toScreen(mx, my);
+
+                if (screenCoord.y >= 0 && screenCoord.y <= canvas.height) {
+                    if (first) {
+                        ctx.moveTo(screenCoord.x, screenCoord.y);
+                        first = false;
+                    } else {
+                        ctx.lineTo(screenCoord.x, screenCoord.y);
+                    }
+                }
+            }
+            ctx.stroke();
+        }
+
+        function update() {
+            const current = functions[currentFuncType];
+            const yA = current.f(xA);
+            const yB = current.f(xB);
+            
+            const dx = xB - xA;
+            const dy = yB - yA;
+            const mSec = dy / dx;
+            const mTan = current.df(xA);
+
+            // Actualizar interfaz de texto
+            xBValSpan.textContent = xB.toFixed(2);
+            deltaXSpan.textContent = dx.toFixed(2);
+            deltaYSpan.textContent = dy.toFixed(2);
+            slopeSecSpan.textContent = mSec.toFixed(2);
+            slopeTanSpan.textContent = mTan.toFixed(2);
+
+            // Cambiar explicaciones didácticas según la cercanía
+            if (dx > 1.5) {
+                expTitle.textContent = "🔍 El Punto B está muy lejos";
+                expText.textContent = "La línea roja es una SECANTE pura. Corta en dos puntos y mide el cambio promedio. Fíjate que el valor de su pendiente no se parece casi nada al de la tangente (verde).";
+                explanationBox.style.backgroundColor = "#fff1f2";
+                explanationBox.style.borderColor = "#fecdd3";
+                explanationBox.style.color = "#9f1239";
+            } else if (dx > 0.3) {
+                expTitle.textContent = "⚡ ¡Te estás acercando!";
+                expText.textContent = "A medida que disminuyes Δx, el punto B resbala por la curva hacia el punto A. La recta secante empieza a girar y a parecerse cada vez más a la recta tangente.";
+                explanationBox.style.backgroundColor = "#fef9c3";
+                explanationBox.style.borderColor = "#fef08a";
+                explanationBox.style.color = "#854d0e";
+            } else {
+                expTitle.textContent = "🎉 ¡Límite alcanzado: La Derivada!";
+                expText.textContent = "¡Casi se fusionan! Cuando Δx tiende a cero, la recta secante se convierte idénticamente en la recta TANGENTE. La pendiente calculada es la derivada exacta en el Punto A.";
+                explanationBox.style.backgroundColor = "#f0fdf4";
+                explanationBox.style.borderColor = "#bbf7d0";
+                explanationBox.style.color = "#166534";
+            }
+
+            drawGrid();
+            drawFunction();
+
+            const ptA = toScreen(xA, yA);
+            const ptB = toScreen(xB, yB);
+
+            // Dibujar los incrementos (Triángulo de pendientes) en líneas de puntos
+            ctx.strokeStyle = '#94a3b8';
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(ptA.x, ptA.y);
+            ctx.lineTo(ptB.x, ptA.y); // Línea horizontal Δx
+            ctx.lineTo(ptB.x, ptB.y); // Línea vertical Δy
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset line dash
+
+            // Dibujar Recta Secante (Roja)
+            ctx.strokeStyle = 'var(--secant-color)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            // Extender la línea para que cruce el canvas completo
+            let xStart = -2;
+            let xEnd = 8;
+            let yStart = yA + mSec * (xStart - xA);
+            let yEnd = yA + mSec * (xEnd - xA);
+            let pStart = toScreen(xStart, yStart);
+            let pEnd = toScreen(xEnd, yEnd);
+            ctx.moveTo(pStart.x, pStart.y);
+            ctx.lineTo(pEnd.x, pEnd.y);
+            ctx.stroke();
+
+            // Dibujar Recta Tangente (Verde) como referencia ideal
+            ctx.strokeStyle = 'var(--tangent-color)';
+            ctx.lineWidth = 2;
+            let yStartTan = yA + mTan * (xStart - xA);
+            let yEndTan = yA + mTan * (xEnd - xA);
+            let pStartTan = toScreen(xStart, yStartTan);
+            let pEndTan = toScreen(xEnd, yEndTan);
+            ctx.moveTo(pStartTan.x, pStartTan.y);
+            ctx.lineTo(pEndTan.x, pEndTan.y);
+            ctx.stroke();
+
+            // Dibujar el Punto A (Fijo, Rojo con borde blanco)
+            ctx.fillStyle = 'var(--text-color)';
+            ctx.beginPath();
+            ctx.arc(ptA.x, ptA.y, 6, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(ptA.x, ptA.y, 4, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Dibujar el Punto B (Móvil, Azul)
+            ctx.fillStyle = 'var(--primary)';
+            ctx.beginPath();
+            ctx.arc(ptB.x, ptB.y, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Etiquetas de puntos
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.fillText('A', ptA.x - 15, ptA.y - 10);
+            ctx.fillText('B', ptB.x + 12, ptB.y - 5);
+        }
+
+        // Manejo del slider
+        slider.addEventListener('input', (e) => {
+            xB = parseFloat(e.target.value);
+            update();
+        });
+
+        // Interacción táctil o ratón directa en el Canvas
+        function getCanvasMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            // Calcular posición relativa real escalada por la resolución interna del canvas
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function checkDragStart(pos) {
+            const current = functions[currentFuncType];
+            const ptB = toScreen(xB, current.f(xB));
+            const dist = Math.hypot(pos.x - ptB.x, pos.y - ptB.y);
+            if (dist < 20) { // Margen de detección del clic
+                isDragging = true;
+            }
+        }
+
+        function handleDragMove(pos) {
+            if (!isDragging) return;
+            let mathPos = toMath(pos.x, pos.y);
+            let newXB = mathPos.x;
+            
+            // Restricciones para que no pase a la izquierda de A ni se salga de los límites del slider
+            let minLimit = xA + 0.01;
+            let maxLimit = parseFloat(slider.max);
+            
+            if (newXB < minLimit) newXB = minLimit;
+            if (newXB > maxLimit) newXB = maxLimit;
+            
+            xB = newXB;
+            slider.value = xB;
+            update();
+        }
+
+        canvas.addEventListener('mousedown', (e) => checkDragStart(getCanvasMousePos(e)));
+        window.addEventListener('mousemove', (e) => handleDragMove(getCanvasMousePos(e)));
+        window.addEventListener('mouseup', () => isDragging = false);
+
+        canvas.addEventListener('touchstart', (e) => {
+            checkDragStart(getCanvasMousePos(e));
+            e.preventDefault();
+        });
+        window.addEventListener('touchmove', (e) => {
+            handleDragMove(getCanvasMousePos(e));
+        }, { passive: false });
+        window.addEventListener('touchend', () => isDragging = false);
+
+        // Inicializar por defecto
+        setFunction('quad');
+    </script>
+</body>
+</html>
